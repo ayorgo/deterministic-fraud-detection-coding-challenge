@@ -1,0 +1,54 @@
+services:
+
+  redis:
+    image: redis:7.2.3-alpine
+    ports:
+      - "6379:6379"
+
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: base
+
+  service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    depends_on:
+      - redis
+    volumes:
+      - .:/home/ayorgo/code
+    expose:
+      - 8005
+    ports:
+      - "8005:8005"
+    healthcheck:
+      test: curl -f http://0.0.0.0:8005/health || exit 1
+      interval: 2s  # seems impossible to configure it in a sensible way
+    environment:
+      LOG_LEVEL: DEBUG
+      DEBUG: 1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SUSPECTED_TTL_SECONDS: 86400  # 24 hours
+      ACCEPTED_TTL_SECONDS: 7200  # 2 hours
+      FRAUD_SCORE_THRESHOLD: 0.25
+    command: uvicorn service:app --host 0.0.0.0 --port 8005
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      service:
+        condition: service_healthy
+    volumes:
+      - .:/home/ayorgo/code
+
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/home/ayorgo/code

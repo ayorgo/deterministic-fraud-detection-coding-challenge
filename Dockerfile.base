@@ -1,0 +1,25 @@
+FROM python:3.11.7-slim-bullseye
+
+RUN apt-get update && apt-get -qq install -y \
+    curl
+
+RUN useradd -ms /bin/bash ayorgo
+USER ayorgo
+
+RUN mkdir /home/ayorgo/code
+WORKDIR /home/ayorgo/code
+
+# Set up python virtual environment
+RUN python -m venv /home/ayorgo/virtualenvs/venvironment
+ENV VIRTUAL_ENV /home/ayorgo/virtualenvs/venvironment
+ENV PATH /home/ayorgo/virtualenvs/venvironment/bin:$PATH
+
+RUN python -m pip install pip==23.3.2
+RUN pip install poetry==1.7.1
+
+COPY --chown=ayorgo:ayorgo pyproject.toml /home/ayorgo/code/pyproject.toml
+COPY --chown=ayorgo:ayorgo poetry.lock /home/ayorgo/code/poetry.lock
+
+ENV HOME=/home/ayorgo
+ENV PATH=/home/ayorgo/.local/bin:${PATH}
+ENV PYTHONPATH=/home/ayorgo/code/src:/home/ayorgo/code/src/service:/home/ayorgo/code/src/client:${PYTHONPATH}

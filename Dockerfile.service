@@ -1,0 +1,3 @@
+FROM base:latest
+
+RUN poetry install --no-root --with service --without main,dev
